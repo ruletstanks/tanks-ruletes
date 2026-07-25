@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Рулетка Мир Танков</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    h1 { color: #ff9900; margin-bottom: 10px; font-size: 22px; text-align: center; }
+    .wheel-container { position: relative; width: 300px; height: 300px; }
+    #wheel {
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      border: 5px solid #ff9900;
+      transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+    }
+    .arrow {
+      position: absolute; top: -15px; left: 50%;
+      transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-top: 25px solid #ff0000;
+      z-index: 10;
+    }
+    button {
+      margin-top: 25px; padding: 12px 30px;
+      background-color: #ff9900; color: #000;
+      font-size: 18px; font-weight: bold;
+      border: none; border-radius: 8px; cursor: pointer;
+    }
+    button:disabled { background-color: #555; color: #888; }
+    #result { margin-top: 20px; font-size: 18px; font-weight: bold; color: #00ffcc; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <h1>🎰 Рулетка Мир Танков</h1>
+
+  <div class="wheel-container">
+    <div class="arrow"></div>
+    <canvas id="wheel" width="300" height="300"></canvas>
+  </div>
+
+  <button id="spinBtn" onclick="spin()">КРУТИТЬ БЕСПЛАТНО</button>
+  <div id="result"></div>
+
+  <script>
+    const canvas = document.getElementById('wheel');
+    const ctx = canvas.getContext('2d');
+    const prizes = ["100 Голды", "Попробуй завтра", "250 Голды", "Премиум 1 день", "500 Голды", "Пусто"];
+    const colors = ["#e67e22", "#2c3e50", "#f1c40f", "#27ae60", "#e74c3c", "#34495e"];
+    
+    let currentAngle = 0;
+
+    function drawWheel() {
+      const numSegments = prizes.length;
+      const anglePerSegment = (2 * Math.PI) / numSegments;
+
+      for (let i = 0; i < numSegments; i++) {
+        ctx.beginPath();
+        ctx.fillStyle = colors[i];
+        ctx.moveTo(150, 150);
+        ctx.arc(150, 150, 150, i * anglePerSegment, (i + 1) * anglePerSegment);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(150, 150);
+        ctx.rotate(i * anglePerSegment + anglePerSegment / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 13px Arial";
+        ctx.fillText(prizes[i], 135, 5);
+        ctx.restore();
+      }
+    }
+
+    drawWheel();
+
+    function spin() {
+      const spinBtn = document.getElementById('spinBtn');
+      spinBtn.disabled = true;
+
+      // Проверка на 24 часа
+      const lastSpin = localStorage.getItem('lastSpin');
+      const now = new Date().getTime();
+      
+      if (lastSpin && now - lastSpin < 86400000) {
+        document.getElementById('result').innerText = "⏳ Вы уже крутили сегодня! Приходите завтра.";
+        return;
+      }
+
+      const randomDegree = Math.floor(3600 + Math.random() * 360);
+      currentAngle += randomDegree;
+      canvas.style.transform = `rotate(${currentAngle}deg)`;
+
+      setTimeout(() => {
+        localStorage.setItem('lastSpin', new Date().getTime());
+        const actualDegree = currentAngle % 360;
+        const segmentAngle = 360 / prizes.length;
+        const winningIndex = Math.floor((360 - (actualDegree % 360)) / segmentAngle) % prizes.length;
+        
+        const winText = prizes[winningIndex];
+        if (winText.includes("Голды") || winText.includes("Премиум")) {
+          document.getElementById('result').innerText = `🎉 Вы выиграли: ${winText}!\nНапишите админу код: #WIN_${Math.floor(Math.random()*8999+1000)}`;
+        } else {
+          document.getElementById('result').innerText = `😔 Приз: ${winText}. Повезет завтра!`;
+        }
+      }, 4000);
+    }
+  </script>
+</body>
+</html>
